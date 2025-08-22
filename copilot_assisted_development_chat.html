@@ -1,0 +1,529 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GitHub Copilot Chat History - Enhanced</title><style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            margin: 0; padding: 20px; background-color: #f6f8fa; line-height: 1.6; color: #24292e;
+        }
+        .container {
+            max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(27,31,35,0.15); overflow: hidden; position: relative;
+        }
+        .toggle-button {
+            position: fixed; top: 20px; right: 20px; z-index: 1000;
+            width: 50px; height: 50px; border-radius: 50%; background: #0366d6;
+            color: white; border: none; font-size: 24px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(3, 102, 214, 0.3);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease;
+        }
+        .toggle-button:hover {
+            background: #0256cc; transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(3, 102, 214, 0.4);
+        }
+        .toggle-button:active {
+            transform: scale(0.95);
+        }
+        .header {
+            background: linear-gradient(135deg, #24292e 0%, #40464d 100%);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { margin: 0 0 10px 0; font-size: 32px; font-weight: 700; }
+        .header p { margin: 0; opacity: 0.9; font-size: 16px; }
+        .stats {
+            background: linear-gradient(135deg, #f1f8ff 0%, #e6f3ff 100%);
+            padding: 25px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+        .stat-item {
+            text-align: center; padding: 15px; background: white; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stat-number { font-size: 28px; font-weight: bold; color: #0366d6; display: block; }
+        .stat-label { font-size: 13px; color: #586069; margin-top: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .content { padding: 30px; }
+        .conversation {
+            margin-bottom: 40px; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); border: 1px solid #e1e4e8;
+        }
+        .conversation-header {
+            background: #f8f9fa; padding: 15px 25px; border-bottom: 1px solid #e1e4e8;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .request-id {
+            font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px;
+            background: #fff; padding: 6px 12px; border-radius: 6px; border: 1px solid #d0d7de;
+            color: #656d76;
+        }
+        .message-user {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e1e4e8 100%);
+            padding: 25px; border-left: 6px solid #0366d6; position: relative;
+        }
+        .message-assistant {
+            background: linear-gradient(135deg, #f0fff4 0%, #e6ffed 100%);
+            padding: 25px; border-left: 6px solid #28a745; position: relative;
+        }
+        .message-header {
+            display: flex; align-items: center; gap: 15px; margin-bottom: 18px;
+        }
+        .avatar {
+            width: 40px; height: 40px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-weight: bold;
+            font-size: 16px; box-shadow: 0 3px 8px rgba(0,0,0,0.15); color: white;
+        }
+        .avatar.user { background: linear-gradient(135deg, #0366d6, #0256cc); }
+        .avatar.assistant { background: linear-gradient(135deg, #28a745, #22863a); }
+        .speaker-name { font-size: 18px; font-weight: 600; color: #24292e; }
+        .message-content {
+            font-size: 15px; line-height: 1.7; color: #24292e; white-space: pre-wrap;
+            margin-bottom: 8px; transition: all 0.3s ease;
+        }
+        .message-content:last-child {
+            margin-bottom: 0;
+        }
+        .message-content strong {
+            font-weight: 700; color: #0366d6; background: rgba(3, 102, 214, 0.08);
+            padding: 1px 3px; border-radius: 3px;
+        }
+        /* 折り畳み関連のスタイル */
+        .collapsed .message-user,
+        .collapsed .message-assistant {
+            max-height: 14em; /* 冒頭約7行分のみ表示 */
+            overflow: hidden;
+            position: relative;
+        }
+        .collapsed .message-user::after,
+        .collapsed .message-assistant::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4.0em;
+            background: linear-gradient(to bottom, transparent, #f8f9fa 70%);
+            pointer-events: none;
+        }
+        .collapsed .message-assistant::after {
+            background: linear-gradient(to bottom, transparent, #f0fff4 70%);
+        }
+        /* 折り畳み時に「...」を右下に表示 */
+        .collapsed .message-user::before,
+        .collapsed .message-assistant::before {
+            content: '...';
+            position: absolute;
+            bottom: 0;
+            right: 25px;
+            background: #f8f9fa;
+            padding: 0 8px;
+            color: #586069;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .collapsed .message-assistant::before {
+            background: #f0fff4;
+        }
+        .tool-section {
+            background: #f8f9fa; border-left: 3px solid #d73a49; border-radius: 3px;
+            margin: 8px 0; padding: 8px 12px; font-size: 12px; color: #586069;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .tool-header {
+            font-weight: 600; color: #d73a49; font-size: 13px; margin: 0;
+        }
+        .tool-content { line-height: 1.4; margin: 0; }
+        .tool-content strong { font-weight: 600; color: #24292e; }
+        .command-block {
+            background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 6px;
+            margin: 8px 0; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 13px; border: 2px solid #333; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+        }
+        .copilot-file-operation {
+            background: #1e1e1e; border: 1px solid #30363d; border-radius: 6px;
+            margin: 8px 0; padding: 8px 12px; font-size: 13px;
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: "SFMono-Regular", Consolas, monospace;
+        }
+        .file-icon {
+            font-size: 16px; color: #f1e05a; /* JavaScript黄色 */
+            flex-shrink: 0;
+        }
+        .file-name {
+            color: #ffffff; font-weight: 600;
+            flex-grow: 1;
+        }
+        .git-diff-stats {
+            display: flex; gap: 4px;
+        }
+        .git-diff-added {
+            color: #28a745; font-weight: 600;
+        }
+        .git-diff-removed {
+            color: #d73a49; font-weight: 600;
+        }
+        .file-path-box {
+            background: #fff; border: 2px solid #0366d6; border-radius: 6px;
+            padding: 8px 12px; display: inline-block;
+            font-family: "SFMono-Regular", Consolas, monospace; font-size: 14px;
+            font-weight: 600; color: #0366d6; box-shadow: 0 2px 4px rgba(3, 102, 214, 0.1);
+            margin: 0; flex-shrink: 0;
+        }
+        .file-full-path {
+            font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px;
+            color: #656d76; word-break: break-all; margin: 0;
+        }
+        .table-container {
+            margin: 16px 0; overflow-x: auto; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #e1e4e8;
+        }
+        .markdown-table {
+            width: 100%; border-collapse: collapse; font-size: 14px;
+            background: white; margin: 0;
+        }
+        .markdown-table thead {
+            background: linear-gradient(135deg, #f6f8fa 0%, #e1e4e8 100%);
+        }
+        .markdown-table th {
+            padding: 12px 16px; text-align: left; font-weight: 600;
+            color: #24292e; border-bottom: 2px solid #e1e4e8;
+            border-right: 1px solid #e1e4e8; font-size: 13px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .markdown-table th:last-child {
+            border-right: none;
+        }
+        .markdown-table td {
+            padding: 12px 16px; border-bottom: 1px solid #e1e4e8;
+            border-right: 1px solid #e1e4e8; vertical-align: top;
+            line-height: 1.5;
+        }
+        .markdown-table td:last-child {
+            border-right: none;
+        }
+        .markdown-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .markdown-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .markdown-table strong {
+            font-weight: 700; color: #0366d6; background: rgba(3, 102, 214, 0.08);
+            padding: 2px 4px; border-radius: 3px; font-size: 13px;
+        }
+        .markdown-heading-h2 {
+            font-size: 24px; font-weight: 700; color: #24292e; margin: 24px 0 16px 0;
+            padding-bottom: 8px; border-bottom: 2px solid #e1e4e8; line-height: 1.3;
+        }
+        .markdown-heading-h3 {
+            font-size: 20px; font-weight: 600; color: #24292e; margin: 20px 0 12px 0;
+            line-height: 1.3;
+        }
+        .code-block-container {
+            margin: 16px 0; border-radius: 8px; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); border: 1px solid #30363d;
+        }
+        .code-language-label {
+            background: #21262d; color: #f0f6fc; padding: 8px 16px; font-size: 12px;
+            font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid #30363d;
+        }
+        .code-block {
+            background: #0d1117; color: #f0f6fc; padding: 16px; margin: 0;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 14px; line-height: 1.5; overflow-x: auto; white-space: pre;
+            border: none;
+        }
+        .code-block.language-javascript {
+            color: #f7df1e; /* JavaScript黄色 */
+        }
+        .code-block.language-typescript {
+            color: #007acc; /* TypeScript青色 */
+        }
+        .code-block.language-python {
+            color: #3776ab; /* Python青色 */
+        }
+        .code-block.language-css {
+            color: #1572b6; /* CSS青色 */
+        }
+        .code-block.language-html {
+            color: #e34f26; /* HTML赤色 */
+        }
+        .code-block code {
+            background: transparent; padding: 0; color: inherit;
+            font-family: inherit; font-size: inherit;
+        }
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .stats { grid-template-columns: 1fr; }
+            .table-container { margin: 12px 0; }
+            .markdown-table { font-size: 12px; }
+            .markdown-table th, .markdown-table td { padding: 8px 12px; }
+            .markdown-heading-h2 { font-size: 20px; }
+            .markdown-heading-h3 { font-size: 18px; }
+            .code-block { font-size: 12px; padding: 12px; }
+            .toggle-button { top: 10px; right: 10px; width: 45px; height: 45px; font-size: 20px; }
+        }
+    </style>
+    <script>
+        let isCollapsed = true; // 初期状態は折り畳み
+        
+        function toggleCollapse() {
+            const button = document.getElementById('toggleButton');
+            const conversations = document.querySelectorAll('.conversation');
+            
+            if (isCollapsed) {
+                // 展開時: 現在見えている会話を特定してから展開
+                const currentScrollY = window.scrollY;
+                const viewportHeight = window.innerHeight;
+                const viewportCenter = currentScrollY + (viewportHeight / 2);
+                
+                // 現在の表示範囲内にある会話を見つける
+                let targetConversationIndex = 0;
+                let bestDistance = Infinity;
+                
+                for (let i = 0; i < conversations.length; i++) {
+                    const conversation = conversations[i];
+                    const conversationTop = conversation.offsetTop;
+                    const conversationHeight = conversation.offsetHeight;
+                    const conversationCenter = conversationTop + (conversationHeight / 2);
+                    const distance = Math.abs(conversationCenter - viewportCenter);
+                    
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        targetConversationIndex = i;
+                    }
+                }
+                
+                // 展開: collapsedクラスを削除
+                conversations.forEach(conversation => {
+                    conversation.classList.remove('collapsed');
+                });
+                button.textContent = '−';
+                isCollapsed = false;
+                
+                // 対象の会話を画面中央に配置
+                setTimeout(() => {
+                    if (targetConversationIndex >= 0 && targetConversationIndex < conversations.length) {
+                        const targetConversation = conversations[targetConversationIndex];
+                        const targetTop = targetConversation.offsetTop;
+                        const targetHeight = targetConversation.offsetHeight;
+                        const targetCenter = targetTop + (targetHeight / 2);
+                        const targetScrollY = targetCenter - (viewportHeight / 2);
+                        
+                        window.scrollTo({
+                            top: Math.max(0, targetScrollY),
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 100);
+            } else {
+                // 折り畳み時: 現在見えている会話を特定
+                const currentScrollY = window.scrollY;
+                const viewportHeight = window.innerHeight;
+                const viewportCenter = currentScrollY + (viewportHeight / 2);
+                
+                let targetConversationIndex = 0;
+                let bestDistance = Infinity;
+                
+                // 現在の表示範囲内にある会話を見つける
+                for (let i = 0; i < conversations.length; i++) {
+                    const conversation = conversations[i];
+                    const conversationTop = conversation.offsetTop;
+                    const conversationHeight = conversation.offsetHeight;
+                    const conversationCenter = conversationTop + (conversationHeight / 2);
+                    const distance = Math.abs(conversationCenter - viewportCenter);
+                    
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        targetConversationIndex = i;
+                    }
+                }
+                
+                // 折り畳み: collapsedクラスを追加
+                conversations.forEach(conversation => {
+                    conversation.classList.add('collapsed');
+                });
+                button.textContent = '+';
+                isCollapsed = true;
+                
+                // 同じ会話を画面中央に維持
+                setTimeout(() => {
+                    if (targetConversationIndex >= 0 && targetConversationIndex < conversations.length) {
+                        const targetConversation = conversations[targetConversationIndex];
+                        const targetTop = targetConversation.offsetTop;
+                        const targetHeight = targetConversation.offsetHeight;
+                        const targetCenter = targetTop + (targetHeight / 2);
+                        const targetScrollY = targetCenter - (viewportHeight / 2);
+                        
+                        window.scrollTo({
+                            top: Math.max(0, targetScrollY),
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 100);
+            }
+        }
+        
+        // ページ読み込み時に初期状態を設定
+        document.addEventListener('DOMContentLoaded', function() {
+            const conversations = document.querySelectorAll('.conversation');
+            const button = document.getElementById('toggleButton');
+            
+            // 初期状態で折り畳み
+            conversations.forEach(conversation => {
+                conversation.classList.add('collapsed');
+            });
+            button.textContent = '+';
+        });
+    </script></head><body>
+    <button id="toggleButton" class="toggle-button" onclick="toggleCollapse()" title="メッセージを折り畳み/展開">+</button>
+    <div class="container"><div class="header"><h1>🤖 GitHub Copilot Chat History</h1><p>Exported via VS Code Extension - Enhanced View | Powered by Nobukz</p></div><div class="stats">
+        <div class="stat-item"><span class="stat-number">5</span><div class="stat-label">Total Requests</div></div>
+        <div class="stat-item"><span class="stat-number">1</span><div class="stat-label">Response Items</div></div>
+        <div class="stat-item"><span class="stat-number">0</span><div class="stat-label">Tool Executions</div></div>
+        <div class="stat-item"><span class="stat-number">28s (0.5分)</span><div class="stat-label">Total Time</div></div>
+    </div><div class="content"><div class="conversation"><div class="conversation-header"><div class="request-id">Request 1: request_64b78d9f-b4a2-46a3-b3ea-8c39c72b18c8</div><div style="font-size: 12px; color: #656d76;">⏱️ 2s (0分) - First: 1s</div></div><div class="message-user"><div class="message-header"><div class="avatar user">👤</div><div class="speaker-name">User Question</div></div><div class="message-content">como puedo crear y publicar una rama con el nombre &quot;project_portfolio&quot;</div></div><div class="message-assistant"><div class="message-header"><div class="avatar assistant">🤖</div><div class="speaker-name">GitHub Copilot</div></div><div class="message-content">Para crear y publicar una rama llamada `project_portfolio`, sigue estos pasos en la terminal:
+
+<div class="code-block-container"><div class="code-language-label">sh</div><pre class="code-block language-sh"><code>git checkout -b project_portfolio
+git push -u origin project_portfolio</code></pre></div>
+
+Esto crea la rama localmente y la publica en el repositorio remoto.</div></div></div><div class="conversation"><div class="conversation-header"><div class="request-id">Request 2: request_b2c10a64-f2d5-401f-b6d4-7f568a8c3cef</div><div style="font-size: 12px; color: #656d76;">⏱️ 3s (0.1分) - First: 2s</div></div><div class="message-user"><div class="message-header"><div class="avatar user">👤</div><div class="speaker-name">User Question</div></div><div class="message-content">como puedo ejecutar la pagina web?</div></div><div class="message-assistant"><div class="message-header"><div class="avatar assistant">🤖</div><div class="speaker-name">GitHub Copilot</div></div><div class="message-content">Puedes ejecutar la página web abriendo el archivo</div><div class="message-content">en tu navegador. Desde la terminal, usa este comando para abrirlo en el navegador predeterminado del host:
+
+<div class="code-block-container"><div class="code-language-label">sh</div><pre class="code-block language-sh"><code>$BROWSER /workspaces/project/portfolio.html</code></pre></div>
+
+Si prefieres usar un servidor local, puedes instalar y usar `python3` así:
+
+<div class="code-block-container"><div class="code-language-label">sh</div><pre class="code-block language-sh"><code>python3 -m http.server 8000</code></pre></div>
+
+Luego abre en tu navegador:  
+[http://localhost:8000/portfolio.html](http://localhost:8000/portfolio.html)</div></div></div><div class="conversation"><div class="conversation-header"><div class="request-id">Request 3: request_27b73651-bcf8-46d2-9b26-ae8c4f72a6f4</div><div style="font-size: 12px; color: #656d76;">⏱️ 4s (0.1分) - First: 1s</div></div><div class="message-user"><div class="message-header"><div class="avatar user">👤</div><div class="speaker-name">User Question</div></div><div class="message-content">podrías ingresar datos en la seccion de proyectos </div></div><div class="message-assistant"><div class="message-header"><div class="avatar assistant">🤖</div><div class="speaker-name">GitHub Copilot</div></div><div class="message-content">Claro, aquí tienes la sección de galería con datos más reales para los proyectos. He actualizado el arreglo `galleryData` con ejemplos de proyectos web:
+
+````html</div><div class="copilot-file-operation">
+                                <span class="file-icon">🟠</span>
+                                <span class="file-name">portfolio.html</span>
+                                <span class="git-diff-stats">
+                                    <span class="git-diff-added">+0</span>
+                                    <span class="git-diff-removed">-0</span>
+                                </span>
+                            </div><div class="message-content">// ...existing code...
+&lt;script&gt;
+    // Contenido de la galería en JSON
+    const galleryData = [
+        {
+            &quot;titulo&quot;: &quot;Sitio de Recetas&quot;,
+            &quot;imagen&quot;: &quot;https://via.placeholder.com/300x200?text=Recetas&quot;,
+            &quot;descripcion&quot;: &quot;Aplicación web para buscar y guardar recetas favoritas, desarrollada con React y Node.js.&quot;
+        },
+        {
+            &quot;titulo&quot;: &quot;Tienda Online&quot;,
+            &quot;imagen&quot;: &quot;https://via.placeholder.com/300x200?text=Tienda+Online&quot;,
+            &quot;descripcion&quot;: &quot;E-commerce responsive con carrito de compras y pasarela de pagos, usando HTML, CSS y JavaScript.&quot;
+        },
+        {
+            &quot;titulo&quot;: &quot;Blog Personal&quot;,
+            &quot;imagen&quot;: &quot;https://via.placeholder.com/300x200?text=Blog&quot;,
+            &quot;descripcion&quot;: &quot;Blog dinámico con panel de administración, construido con Django y Bootstrap.&quot;
+        }
+    ];
+
+    // Renderizar galería
+    const gallery = document.getElementById(&#039;gallery&#039;);
+    galleryData.forEach(item =&gt; {
+        const div = document.createElement(&#039;div&#039;);
+        div.className = &#039;gallery-item&#039;;
+        div.innerHTML = `
+            &lt;img src=&quot;${item.imagen}&quot; alt=&quot;${item.titulo}&quot;&gt;
+            &lt;p&gt;&lt;strong&gt;${item.titulo}&lt;/strong&gt;&lt;/p&gt;
+            &lt;p&gt;${item.descripcion}&lt;/p&gt;
+        `;
+        gallery.appendChild(div);
+    });
+
+    // Manejo simple del formulario de contacto (solo frontend)
+    document.getElementById(&#039;contactForm&#039;).addEventListener(&#039;submit&#039;, function(e) {
+        e.preventDefault();
+        document.getElementById(&#039;formMsg&#039;).textContent = &#039;¡Gracias por tu mensaje!&#039;;
+        this.reset();
+    });
+&lt;/script&gt;
+// ...existing code...
+````</div></div></div><div class="conversation"><div class="conversation-header"><div class="request-id">Request 4: request_864e4eed-3704-4093-a860-ce6c2c5667e5</div><div style="font-size: 12px; color: #656d76;">⏱️ 5s (0.1分) - First: 1s</div></div><div class="message-user"><div class="message-header"><div class="avatar user">👤</div><div class="speaker-name">User Question</div></div><div class="message-content">cuando ingreso datos en el formulario de contacto y sale error y vuelvo a ingresarlos correctamente no se quita el mensaje de error, como solucionarlo?</div></div><div class="message-assistant"><div class="message-header"><div class="avatar assistant">🤖</div><div class="speaker-name">GitHub Copilot</div></div><div class="message-content">Para solucionar esto, debes limpiar el mensaje de error cuando el usuario comienza a escribir nuevamente en cualquier campo del formulario. Puedes hacerlo agregando un evento `input` a los campos del formulario para limpiar el mensaje (`formMsg.textContent = &#039;&#039;`) cuando el usuario modifica algún valor.
+
+Agrega este bloque antes del cierre de la etiqueta `&lt;script&gt;`:
+
+````html</div><div class="copilot-file-operation">
+                                <span class="file-icon">🟠</span>
+                                <span class="file-name">portfolio.html</span>
+                                <span class="git-diff-stats">
+                                    <span class="git-diff-added">+0</span>
+                                    <span class="git-diff-removed">-0</span>
+                                </span>
+                            </div><div class="message-content">// ...existing code...
+
+// Limpiar mensaje de error al escribir en cualquier campo
+[&#039;nombre&#039;, &#039;email&#039;, &#039;mensaje&#039;].forEach(id =&gt; {
+    document.querySelector(`[name=&quot;${id}&quot;]`).addEventListener(&#039;input&#039;, function() {
+        document.getElementById(&#039;formMsg&#039;).textContent = &#039;&#039;;
+    });
+});
+
+// ...existing code...
+````
+
+Esto hará que el mensaje de error/desbloqueo desaparezca en cuanto el usuario empiece a corregir los datos.</div></div></div><div class="conversation"><div class="conversation-header"><div class="request-id">Request 5: request_c193caab-91e8-4daf-b068-80e3a86ce9cd</div><div style="font-size: 12px; color: #656d76;">⏱️ 13s (0.2分) - First: 1s</div></div><div class="message-user"><div class="message-header"><div class="avatar user">👤</div><div class="speaker-name">User Question</div></div><div class="message-content">cuando ingreso datos correctos y le doy enviar me sale error de por favor ingresa un nombre valido</div></div><div class="message-assistant"><div class="message-header"><div class="avatar assistant">🤖</div><div class="speaker-name">GitHub Copilot</div></div><div class="message-content">El problema ocurre porque tienes <strong>dos manejadores</strong> para el evento `submit` en el formulario. El primero siempre muestra &quot;¡Gracias por tu mensaje!&quot; y resetea el formulario, y el segundo hace la validación. Ambos se ejecutan, lo que causa un comportamiento inesperado.
+
+<strong>Solución:</strong>  
+Deja solo <strong>un manejador de submit</strong> que haga la validación y muestre el mensaje de éxito si todo es correcto.
+
+Aquí tienes el bloque corregido:
+
+````html</div><div class="copilot-file-operation">
+                                <span class="file-icon">🟠</span>
+                                <span class="file-name">portfolio.html</span>
+                                <span class="git-diff-stats">
+                                    <span class="git-diff-added">+0</span>
+                                    <span class="git-diff-removed">-0</span>
+                                </span>
+                            </div><div class="message-content">// ...existing code...
+&lt;script&gt;
+    // ...galería...
+
+    // Manejo y validación del formulario de contacto (solo frontend)
+    document.getElementById(&#039;contactForm&#039;).addEventListener(&#039;submit&#039;, function(e) {
+        e.preventDefault();
+        const nombre = this.nombre.value.trim();
+        const email = this.email.value.trim();
+        const mensaje = this.mensaje.value.trim();
+        const formMsg = document.getElementById(&#039;formMsg&#039;);
+        formMsg.style.color = &#039;red&#039;;
+
+        // Validación básica
+        if (nombre.length &lt; 2) {
+            formMsg.textContent = &#039;Por favor, ingresa un nombre válido.&#039;;
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            formMsg.textContent = &#039;Por favor, ingresa un correo electrónico válido.&#039;;
+            return;
+        }
+        if (mensaje.length &lt; 5) {
+            formMsg.textContent = &#039;El mensaje debe tener al menos 5 caracteres.&#039;;
+            return;
+        }
+        formMsg.style.color = &#039;green&#039;;
+        formMsg.textContent = &#039;¡Gracias por tu mensaje!&#039;;
+        this.reset();
+    });
+
+    // Limpiar mensaje de error al escribir en cualquier campo
+    const form = document.getElementById(&#039;contactForm&#039;);
+    [&#039;nombre&#039;, &#039;email&#039;, &#039;mensaje&#039;].forEach(field =&gt; {
+        form[field].addEventListener(&#039;input&#039;, () =&gt; {
+            document.getElementById(&#039;formMsg&#039;).textContent = &#039;&#039;;
+        });
+    });
+&lt;/script&gt;
+// ...existing code...
+````
+
+<strong>Elimina el primer manejador de submit</strong> y usa solo este. Así la validación funcionará correctamente.</div></div></div></div></div></body></html>

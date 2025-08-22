@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Portafolio Personal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f4f4f4; }
+        header { background: #333; color: #fff; padding: 1rem 2rem; }
+        nav a { color: #fff; margin-right: 1rem; text-decoration: none; }
+        section { padding: 2rem; background: #fff; margin: 2rem auto; max-width: 800px; border-radius: 8px; }
+        h2 { color: #333; }
+        .gallery { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .gallery-item { width: calc(33% - 1rem); background: #eee; border-radius: 4px; overflow: hidden; }
+        .gallery-item img { width: 100%; display: block; }
+        .gallery-item p { margin: 0.5rem; font-size: 0.95rem; }
+        form { display: flex; flex-direction: column; gap: 1rem; }
+        input, textarea { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 0.7rem; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #555; }
+        @media (max-width: 600px) {
+            .gallery-item { width: 100%; }
+            section { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="#acerca">Acerca de mí</a>
+            <a href="#galeria">Galería</a>
+            <a href="#contacto">Contacto</a>
+        </nav>
+    </header>
+
+    <section id="acerca">
+        <h2>Acerca de mí</h2>
+        <p>
+            ¡Hola! Soy Angy, una desarrolladora web con experiencia en la creación de sitios modernos y funcionales. Me especializo en HTML, CSS, JavaScript y frameworks modernos. Me encanta aprender nuevas tecnologías y enfrentar desafíos creativos.
+        </p>
+    </section>
+
+    <section id="galeria">
+        <h2>Galería</h2>
+        <div class="gallery" id="gallery"></div>
+    </section>
+
+    <section id="contacto">
+        <h2>Contacto</h2>
+        <form id="contactForm">
+            <input type="text" name="nombre" placeholder="Tu nombre" required>
+            <input type="email" name="email" placeholder="Tu correo electrónico" required>
+            <textarea name="mensaje" rows="5" placeholder="Tu mensaje" required></textarea>
+            <button type="submit">Enviar</button>
+        </form>
+        <div id="formMsg"></div>
+    </section>
+
+    <script>
+        // Contenido de la galería en JSON
+        const galleryData = [
+            {
+            "titulo": "Sitio Web de Recetas",
+            "imagen": "https://via.placeholder.com/300x200?text=Recetas",
+            "descripcion": "Aplicación web para buscar y guardar recetas favoritas, desarrollada con React y Node.js."
+            },
+            {
+            "titulo": "Tienda Online",
+            "imagen": "https://via.placeholder.com/300x200?text=Tienda+Online",
+            "descripcion": "E-commerce responsivo con carrito de compras, pasarela de pagos y panel de administración."
+            },
+            {
+            "titulo": "Blog Personal",
+            "imagen": "https://via.placeholder.com/300x200?text=Blog",
+            "descripcion": "Blog desarrollado en HTML, CSS y JavaScript, con sistema de comentarios y buscador."
+            },
+            {
+            "titulo": "Gestor de Tareas",
+            "imagen": "https://via.placeholder.com/300x200?text=Gestor+Tareas",
+            "descripcion": "App para organizar tareas diarias, con notificaciones y sincronización en la nube."
+            },
+            {
+            "titulo": "Portafolio Animado",
+            "imagen": "https://via.placeholder.com/300x200?text=Portafolio",
+            "descripcion": "Portafolio interactivo con animaciones CSS y proyectos destacados."
+            },
+            {
+            "titulo": "Dashboard de Ventas",
+            "imagen": "https://via.placeholder.com/300x200?text=Dashboard",
+            "descripcion": "Panel de control para visualizar métricas de ventas en tiempo real usando Chart.js."
+            }
+        ];
+
+        // Renderizar galería
+        const gallery = document.getElementById('gallery');
+        galleryData.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.innerHTML = `
+                <img src="${item.imagen}" alt="${item.titulo}">
+                <p><strong>${item.titulo}</strong></p>
+                <p>${item.descripcion}</p>
+            `;
+            gallery.appendChild(div);
+        });
+
+        // Manejo y validación del formulario de contacto (solo frontend)
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const nombre = this.nombre.value.trim();
+        const email = this.email.value.trim();
+        const mensaje = this.mensaje.value.trim();
+        const formMsg = document.getElementById('formMsg');
+        formMsg.style.color = 'red';
+
+        // Validación básica
+        if (nombre.length < 2) {
+            formMsg.textContent = 'Por favor, ingresa un nombre válido.';
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            formMsg.textContent = 'Por favor, ingresa un correo electrónico válido.';
+            return;
+        }
+        if (mensaje.length < 5) {
+            formMsg.textContent = 'El mensaje debe tener al menos 5 caracteres.';
+            return;
+        }
+        formMsg.style.color = 'green';
+        formMsg.textContent = '¡Gracias por tu mensaje!';
+        this.reset();
+    });
+        // Limpiar mensaje de error al escribir en cualquier campo
+        const form = document.getElementById('contactForm');
+        ['nombre', 'email', 'mensaje'].forEach(field => {
+            form[field].addEventListener('input', () => {
+                document.getElementById('formMsg').textContent = '';
+            });
+        });
+    </script>
+</body>
+</html>

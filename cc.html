@@ -1,0 +1,38 @@
+<!-- Puedes guardar esto como ver_json.html y abrirlo en tu navegador -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ver JSON en HTML</title>
+  <style>
+    pre {
+      background: #f4f4f4;
+      padding: 1em;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Contenido del JSON</h1>
+  <pre id="json-view"></pre>
+  <script>
+    // Pega aquí tu JSON (solo el objeto, sin los comentarios de filepath)
+    const data = {
+      "requesterUsername": "angydr16",
+      "requesterAvatarIconUri": {
+        "$mid": 1,
+        "path": "/u/36868782",
+        "scheme": "https",
+        "authority": "avatars.githubusercontent.com",
+        "query": "v=4"
+      },
+      // ...el resto de tu JSON...
+      
+    };
+
+    // Muestra el JSON bonito en la página
+    document.getElementById('json-view').textContent = JSON.stringify(data, null, 2);
+  </script>
+</body>
+</html>
